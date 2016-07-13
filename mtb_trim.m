@@ -1,12 +1,23 @@
-%mtb file cutter
+function mtb_trim(file_name,trim_begin,trim_end)%mtb file trimmer
 
-file_name = 'H:\data\Murcia Broccoli Data 25-29 April 2016\Documents\MT_07700741_029.mtb';
-file_name = 'H:\data\MT_07700741_011.mtb';
+if nargin == 1
+    trim_begin = 0;
+elseif nargin == 2
+    trim_end = 0;
+end
+
+file_name_out = [file_name(1:end-4) '_trimmed.mtb'];
 
 fid = fopen(file_name);
+fid_out = fopen(file_name_out,'w+');
 
 if fid == -1
     fprintf('Could not open %s file.',file_name);
+    return;
+end
+
+if fid_out == -1
+    fprintf('Could not create %s file.',file_name_out);
     return;
 end
 
@@ -26,6 +37,7 @@ while ~feof(fid)
                 length = length_ext(1) * 256 + length_ext(2);
             end
             data = fread(fid,length);
+            if 0
             if mid == 13
                 date = char(data(17:24));
                 time = char(data(25:32));
@@ -60,15 +72,33 @@ while ~feof(fid)
                     jj = jj+1+dlength;
                 end
             end
+            end
             checksum = fread(fid,1);
-            fprintf('Message: mid %d, length %d\n',mid,length);            
-            packet_counter = packet_counter + 1;
+            %fprintf('Message: mid %d, length %d\n',mid,length);
+            
+            if mid == 54
+                packet_counter = packet_counter + 1;
+                if packet_counter <= trim_begin
+                    continue;
+                end
+                if trim_end ~= 0 && packet_counter > trim_end
+                    continue;
+                end
+            end
+            
+            %%write message
+            fwrite(fid_out,[preamble bid mid]);
+            if length >= 255
+                fwrite(fid_out,[255 length/256 mod(length,256)]);
+            else
+                fwrite(fid_out,length);
+            end
+            fwrite(fid_out,data);
+            fwrite(fid_out,checksum);
         end
     end
 end
 
 fclose(fid);
+fclose(fid_out);
 
-packet_counter
-packet_begin
-packet_end
