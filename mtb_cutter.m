@@ -1,6 +1,7 @@
 %mtb file cutter
 
-file_name = 'D:\data\broccoli\20151104_IMU\MT_07700741_011.mtb';
+file_name = 'H:\data\Murcia Broccoli Data 25-29 April 2016\Documents\MT_07700741_029.mtb';
+file_name = 'H:\data\MT_07700741_011.mtb';
 
 fid = fopen(file_name);
 
@@ -25,7 +26,10 @@ while ~feof(fid)
                 length = length_ext(1) * 256 + length_ext(2);
             end
             data = fread(fid,length);
-            if mid == 54
+            if mid == 13
+                date = char(data(17:24));
+                time = char(data(25:32));
+            elseif mid == 54
                 jj = 1;
                 while jj < size(data,1)
                     did = data(jj)*256 + data(jj+1);
@@ -46,6 +50,12 @@ while ~feof(fid)
                         minute = data(jj+10);
                         second = data(jj+11);
                         fprintf('UTC time %04d%02d%02dT%02d%02d%02d:%09d\n',year,month,day,hour,minute,second,ns);
+                    elseif did == 4192 % 0x1060
+                        time_fine = data(jj+1)*256*256*256 + data(jj+2)*256*256 + data(jj+3)*256 + data(jj+4);
+                        fprintf('SampleTimeFine %d\n',time_fine);
+                    elseif did == 4108 % 0x1070
+                        time_coarse = data(jj+1)*256*256*256 + data(jj+2)*256*256 + data(jj+3)*256 + data(jj+4);
+                        fprintf('SampleTimeCoarse %d\n',time_coarse);
                     end
                     jj = jj+1+dlength;
                 end
